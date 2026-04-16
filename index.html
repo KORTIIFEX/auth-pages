@@ -3,7 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>System Access Reset</title>
+    <title>System Access Reset | Secure Terminal</title>
+    
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
     
@@ -13,6 +14,8 @@
             --bg-dark: #020617;
             --glass: rgba(255, 255, 255, 0.05);
             --border: rgba(255, 255, 255, 0.15);
+            --success: #10B981;
+            --error: #ef4444;
         }
 
         body, html {
@@ -24,7 +27,7 @@
         }
 
         /* Matrix Background */
-        canvas { position: fixed; top: 0; left: 0; z-index: 1; }
+        canvas { position: fixed; top: 0; left: 0; z-index: 1; opacity: 0.6; }
 
         /* Glassmorphism Card */
         .glass-container {
@@ -51,12 +54,14 @@
         }
 
         h1 { color: white; font-size: 22px; font-weight: 800; letter-spacing: 1px; margin-bottom: 8px; }
-        p { color: rgba(255,255,255,0.6); font-size: 14px; margin-bottom: 30px; }
+        p { color: rgba(255,255,255,0.6); font-size: 14px; margin-bottom: 25px; }
 
+        /* Inputs */
+        .input-group { text-align: left; margin-bottom: 15px; }
         input {
             width: 100%;
             padding: 14px;
-            background: rgba(0, 0, 0, 0.2);
+            background: rgba(0, 0, 0, 0.3);
             border: 1px solid var(--border);
             border-radius: 12px;
             color: white;
@@ -65,13 +70,25 @@
             outline: none;
             transition: 0.3s;
         }
-
         input:focus { border-color: var(--accent); box-shadow: 0 0 10px rgba(249, 115, 22, 0.2); }
 
+        /* Policy Rules */
+        .policy-list {
+            list-style: none;
+            padding: 0;
+            margin: 0 0 20px 5px;
+            text-align: left;
+            font-size: 12px;
+            color: rgba(255,255,255,0.4);
+        }
+        .policy-item.valid { color: var(--success); }
+        .policy-item.valid::before { content: "✓ "; }
+        .policy-item.invalid::before { content: "○ "; }
+
+        /* Buttons & Messages */
         button {
             width: 100%;
             padding: 16px;
-            margin-top: 20px;
             background: var(--accent);
             color: white;
             border: none;
@@ -82,10 +99,10 @@
             text-transform: uppercase;
             letter-spacing: 1px;
         }
+        button:hover:not(:disabled) { background: #ea580c; transform: translateY(-2px); }
+        button:disabled { opacity: 0.5; cursor: not-allowed; }
 
-        button:hover { background: #ea580c; transform: translateY(-2px); }
-        
-        #status-msg { margin-top: 20px; font-size: 13px; font-weight: 500; }
+        #status-msg { margin-top: 20px; font-size: 13px; font-weight: 500; display: none; }
     </style>
 </head>
 <body>
@@ -99,36 +116,47 @@
         <h1>SECURE RESET</h1>
         <p>Update your terminal access key</p>
         
-        <input type="password" id="pass1" placeholder="New Password">
-        <input type="password" id="pass2" placeholder="Confirm Password" style="margin-top: 10px;">
+        <div class="input-group">
+            <input type="password" id="pass1" placeholder="New Password" oninput="validateInput()">
+        </div>
+
+        <ul class="policy-list">
+            <li id="rule-length" class="policy-item invalid">Min. 8 characters</li>
+            <li id="rule-number" class="policy-item invalid">Contains a number</li>
+        </ul>
+
+        <div class="input-group">
+            <input type="password" id="pass2" placeholder="Confirm Password" oninput="validateInput()">
+        </div>
         
-        <button onclick="handleReset()">Apply Changes</button>
         <div id="status-msg"></div>
+        
+        <button id="reset-btn" onclick="handleReset()" disabled>Apply Changes</button>
     </div>
 
     <script>
-        // REPLACE WITH YOUR FIREBASE CONFIG
+        // --- 1. CONFIGURATION ---
+        // REPLACE WITH YOUR ACTUAL FIREBASE CONFIG FROM CONSOLE
         const firebaseConfig = {
             apiKey: "YOUR_API_KEY",
             authDomain: "YOUR_PROJECT.firebaseapp.com",
             projectId: "YOUR_PROJECT",
             storageBucket: "YOUR_PROJECT.appspot.com",
-            messagingSenderId: "YOUR_SENDER_ID",
+            messagingSenderId: "YOUR_ID",
             appId: "YOUR_APP_ID"
         };
-
         firebase.initializeApp(firebaseConfig);
 
-        // Matrix Rain Logic
+        // --- 2. MATRIX ANIMATION ---
         const canvas = document.getElementById('matrix');
         const ctx = canvas.getContext('2d');
         canvas.width = window.innerWidth; canvas.height = window.innerHeight;
-        const letters = "010101010101";
+        const letters = "01010101";
         const fontSize = 16;
         const columns = canvas.width / fontSize;
         const drops = Array.from({ length: columns }).fill(1);
 
-        function draw() {
+        function drawMatrix() {
             ctx.fillStyle = "rgba(2, 6, 23, 0.1)";
             ctx.fillRect(0, 0, canvas.width, canvas.height);
             ctx.fillStyle = "#F97316"; 
@@ -140,33 +168,67 @@
                 drops[i]++;
             }
         }
-        setInterval(draw, 50);
+        setInterval(drawMatrix, 50);
 
-        // Reset Logic
-        function handleReset() {
+        // --- 3. VALIDATION LOGIC ---
+        function validateInput() {
             const p1 = document.getElementById('pass1').value;
             const p2 = document.getElementById('pass2').value;
+            const btn = document.getElementById('reset-btn');
+            
+            const isLong = p1.length >= 8;
+            const hasNum = /\d/.test(p1);
+            const matches = p1 === p2 && p1 !== "";
+
+            // Update UI Rules
+            document.getElementById('rule-length').className = isLong ? 'policy-item valid' : 'policy-item invalid';
+            document.getElementById('rule-number').className = hasNum ? 'policy-item valid' : 'policy-item invalid';
+
+            // Enable button only if all valid
+            btn.disabled = !(isLong && hasNum && matches);
+        }
+
+        // --- 4. FIREBASE RESET LOGIC ---
+        function handleReset() {
+            const p1 = document.getElementById('pass1').value;
             const msg = document.getElementById('status-msg');
+            const btn = document.getElementById('reset-btn');
+            
             const urlParams = new URLSearchParams(window.location.search);
             const code = urlParams.get('oobCode');
 
-            if (p1 !== p2) {
-                msg.style.color = "#ef4444";
-                msg.innerText = "Passwords do not match.";
+            if (!code) {
+                showStatus("No security code found in URL.", "error");
                 return;
             }
 
+            btn.innerText = "UPDATING...";
+            btn.disabled = true;
+
             firebase.auth().confirmPasswordReset(code, p1)
                 .then(() => {
-                    msg.style.color = "#10B981";
-                    msg.innerText = "System access updated. Return to app.";
+                    showStatus("ACCESS RESTORED. You may now log in to the app.", "success");
+                    btn.style.display = "none";
+                    document.querySelectorAll('input').forEach(i => i.disabled = true);
                 })
-                .catch((e) => {
-                    msg.style.color = "#ef4444";
-                    msg.innerText = "Session expired. Request a new link.";
+                .catch((error) => {
+                    btn.innerText = "APPLY CHANGES";
+                    btn.disabled = false;
+                    
+                    let errorText = "Process failed. Try again.";
+                    if (error.code === 'auth/expired-action-code') errorText = "Link expired. Request a new one.";
+                    if (error.code === 'auth/invalid-action-code') errorText = "This link has already been used.";
+                    
+                    showStatus(errorText, "error");
                 });
+        }
+
+        function showStatus(text, type) {
+            const msg = document.getElementById('status-msg');
+            msg.innerText = text;
+            msg.style.display = "block";
+            msg.style.color = type === "success" ? "var(--success)" : "var(--error)";
         }
     </script>
 </body>
 </html>
-
