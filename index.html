@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>System Access Reset</title>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+    
+    <style>
+        :root {
+            --accent: #F97316; /* Your brand orange */
+            --bg-dark: #020617;
+            --glass: rgba(255, 255, 255, 0.05);
+            --border: rgba(255, 255, 255, 0.15);
+        }
+
+        body, html {
+            margin: 0; padding: 0; height: 100%;
+            background-color: var(--bg-dark);
+            font-family: 'Inter', -apple-system, sans-serif;
+            display: flex; align-items: center; justify-content: center;
+            overflow: hidden;
+        }
+
+        /* Matrix Background */
+        canvas { position: fixed; top: 0; left: 0; z-index: 1; }
+
+        /* Glassmorphism Card */
+        .glass-container {
+            position: relative;
+            z-index: 10;
+            width: 360px;
+            padding: 40px;
+            background: var(--glass);
+            backdrop-filter: blur(20px) saturate(180%);
+            -webkit-backdrop-filter: blur(20px) saturate(180%);
+            border-radius: 30px;
+            border: 1px solid var(--border);
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            text-align: center;
+        }
+
+        .logo-area {
+            width: 60px; height: 60px;
+            background: var(--accent);
+            border-radius: 18px;
+            margin: 0 auto 20px;
+            display: flex; align-items: center; justify-content: center;
+            box-shadow: 0 0 20px rgba(249, 115, 22, 0.4);
+        }
+
+        h1 { color: white; font-size: 22px; font-weight: 800; letter-spacing: 1px; margin-bottom: 8px; }
+        p { color: rgba(255,255,255,0.6); font-size: 14px; margin-bottom: 30px; }
+
+        input {
+            width: 100%;
+            padding: 14px;
+            background: rgba(0, 0, 0, 0.2);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            color: white;
+            font-size: 16px;
+            box-sizing: border-box;
+            outline: none;
+            transition: 0.3s;
+        }
+
+        input:focus { border-color: var(--accent); box-shadow: 0 0 10px rgba(249, 115, 22, 0.2); }
+
+        button {
+            width: 100%;
+            padding: 16px;
+            margin-top: 20px;
+            background: var(--accent);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: 0.3s;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        button:hover { background: #ea580c; transform: translateY(-2px); }
+        
+        #status-msg { margin-top: 20px; font-size: 13px; font-weight: 500; }
+    </style>
+</head>
+<body>
+
+    <canvas id="matrix"></canvas>
+
+    <div class="glass-container">
+        <div class="logo-area">
+            <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+        </div>
+        <h1>SECURE RESET</h1>
+        <p>Update your terminal access key</p>
+        
+        <input type="password" id="pass1" placeholder="New Password">
+        <input type="password" id="pass2" placeholder="Confirm Password" style="margin-top: 10px;">
+        
+        <button onclick="handleReset()">Apply Changes</button>
+        <div id="status-msg"></div>
+    </div>
+
+    <script>
+        // REPLACE WITH YOUR FIREBASE CONFIG
+        const firebaseConfig = {
+            apiKey: "YOUR_API_KEY",
+            authDomain: "YOUR_PROJECT.firebaseapp.com",
+            projectId: "YOUR_PROJECT",
+            storageBucket: "YOUR_PROJECT.appspot.com",
+            messagingSenderId: "YOUR_SENDER_ID",
+            appId: "YOUR_APP_ID"
+        };
+
+        firebase.initializeApp(firebaseConfig);
+
+        // Matrix Rain Logic
+        const canvas = document.getElementById('matrix');
+        const ctx = canvas.getContext('2d');
+        canvas.width = window.innerWidth; canvas.height = window.innerHeight;
+        const letters = "010101010101";
+        const fontSize = 16;
+        const columns = canvas.width / fontSize;
+        const drops = Array.from({ length: columns }).fill(1);
+
+        function draw() {
+            ctx.fillStyle = "rgba(2, 6, 23, 0.1)";
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.fillStyle = "#F97316"; 
+            ctx.font = fontSize + "px monospace";
+            for (let i = 0; i < drops.length; i++) {
+                const text = letters.charAt(Math.floor(Math.random() * letters.length));
+                ctx.fillText(text, i * fontSize, drops[i] * fontSize);
+                if (drops[i] * fontSize > canvas.height && Math.random() > 0.975) drops[i] = 0;
+                drops[i]++;
+            }
+        }
+        setInterval(draw, 50);
+
+        // Reset Logic
+        function handleReset() {
+            const p1 = document.getElementById('pass1').value;
+            const p2 = document.getElementById('pass2').value;
+            const msg = document.getElementById('status-msg');
+            const urlParams = new URLSearchParams(window.location.search);
+            const code = urlParams.get('oobCode');
+
+            if (p1 !== p2) {
+                msg.style.color = "#ef4444";
+                msg.innerText = "Passwords do not match.";
+                return;
+            }
+
+            firebase.auth().confirmPasswordReset(code, p1)
+                .then(() => {
+                    msg.style.color = "#10B981";
+                    msg.innerText = "System access updated. Return to app.";
+                })
+                .catch((e) => {
+                    msg.style.color = "#ef4444";
+                    msg.innerText = "Session expired. Request a new link.";
+                });
+        }
+    </script>
+</body>
+</html>
