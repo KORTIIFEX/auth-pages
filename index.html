@@ -1,12 +1,9 @@
-Here is your full, final code. I have integrated the `firebase.auth().signOut()` command to ensure sessions are cleared immediately, updated your `authDomain` to your professional custom domain, and kept your **Aland Dana** branding and Matrix aesthetic.
-
-```html
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>System Access Reset | CodeMarket</title>
+    <title>System Access Reset | Aland Dana</title>
     
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
@@ -21,27 +18,45 @@ Here is your full, final code. I have integrated the `firebase.auth().signOut()`
             --error: #ef4444;
         }
 
+        /* FIXED CENTERING */
         body, html {
-            margin: 0; padding: 0; height: 100%;
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
             background-color: var(--bg-dark);
             font-family: 'Inter', sans-serif;
-            display: flex; align-items: center; justify-content: center;
+            display: flex;
+            align-items: center;
+            justify-content: center;
             overflow: hidden;
         }
 
-        canvas { position: fixed; top: 0; left: 0; z-index: 1; opacity: 0.5; }
+        canvas { 
+            position: fixed; 
+            top: 0; 
+            left: 0; 
+            width: 100%;
+            height: 100%;
+            z-index: 1; 
+            opacity: 0.5; 
+        }
 
         .glass-container {
             position: relative;
             z-index: 10;
-            width: 360px;
+            width: 100%;
+            max-width: 360px; /* Limits width on desktop */
+            margin: 20px;
             padding: 40px;
             background: var(--glass);
             backdrop-filter: blur(25px) saturate(180%);
+            -webkit-backdrop-filter: blur(25px) saturate(180%);
             border-radius: 30px;
             border: 1px solid var(--border);
             box-shadow: 0 25px 50px rgba(0, 0, 0, 0.5);
             text-align: center;
+            box-sizing: border-box; /* Ensures padding doesn't push it right */
         }
 
         .logo-area {
@@ -53,8 +68,8 @@ Here is your full, final code. I have integrated the `firebase.auth().signOut()`
             box-shadow: 0 0 15px rgba(249, 115, 22, 0.3);
         }
 
-        h1 { color: white; font-size: 20px; font-weight: 800; letter-spacing: 1px; margin-bottom: 5px; }
-        p { color: rgba(255,255,255,0.5); font-size: 13px; margin-bottom: 25px; }
+        h1 { color: white; font-size: 20px; font-weight: 800; letter-spacing: 1px; margin: 0 0 5px 0; }
+        p { color: rgba(255,255,255,0.5); font-size: 13px; margin: 0 0 25px 0; }
 
         input {
             width: 100%;
@@ -146,7 +161,13 @@ Here is your full, final code. I have integrated the `firebase.auth().signOut()`
     // 2. MATRIX ANIMATION
     const canvas = document.getElementById('matrix');
     const ctx = canvas.getContext('2d');
-    canvas.width = window.innerWidth; canvas.height = window.innerHeight;
+    function resize() {
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+    }
+    window.addEventListener('resize', resize);
+    resize();
+
     const drops = Array(Math.floor(canvas.width/16)).fill(1);
     function draw() {
         ctx.fillStyle = "rgba(2, 6, 23, 0.1)";
@@ -208,13 +229,10 @@ Here is your full, final code. I have integrated the `firebase.auth().signOut()`
 
         firebase.auth().confirmPasswordReset(code, p1)
             .then(() => {
-                // Force logout of old session tokens
                 firebase.auth().signOut(); 
-                
                 status.style.color = "var(--success)";
                 status.innerText = "ACCESS UPDATED. Active sessions cleared.";
                 btn.style.display = "none";
-                
                 document.getElementById('p1').disabled = true;
                 document.getElementById('p2').disabled = true;
             })
@@ -228,4 +246,3 @@ Here is your full, final code. I have integrated the `firebase.auth().signOut()`
 </script>
 </body>
 </html>
-```
